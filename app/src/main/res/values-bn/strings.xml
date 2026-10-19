@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">রিফাত অ্যাপ লকার</string>
+    <string name="accessibility_service_label">রিফাত অ্যাপ লকার সুরক্ষা</string>
+    <string name="accessibility_service_description">সুরক্ষিত অ্যাপ চালু হলে নিরাপত্তা যাচাইয়ের স্ক্রিন প্রদর্শনের জন্য এটি ব্যবহৃত হয়। রিফাত অ্যাপ লকার কোনো ব্যক্তিগত তথ্য বা কিবোর্ড ইনপুট সংগ্রহ করে না।</string>
+
+    <!-- General -->
+    <string name="developer_name">মোল্লা মোহাম্মদ রিফাত ওসামা</string>
+    <string name="telegram_channel_url">https://t.me/RiFAT_TECH_BD</string>
+    <string name="telegram_profile_url">https://t.me/Molla_Mohammad_Rifat_Osama</string>
+    <string name="telegram_username">@Molla_Mohammad_Rifat_Osama</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">অ্যাপ সুরক্ষা সেবা</string>
+    <string name="notification_channel_desc">রিফাত অ্যাপ লকারের ব্যাকগ্রাউন্ড সক্রিয়তা প্রদর্শন করে</string>
+    <string name="notification_title">রিফাত অ্যাপ লকার সক্রিয় আছে</string>
+    <string name="notification_content">সুরক্ষিত অ্যাপ নজরদারি ও আপনার গোপনীয়তা বজায় রাখা হচ্ছে</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">ড্যাশবোর্ড</string>
+    <string name="nav_apps">অ্যাপ ব্যবস্থাপনা</string>
+    <string name="nav_settings">সেটিংস</string>
+    <string name="nav_developer">ডেভেলপার</string>
+    <string name="nav_help">সহায়তা</string>
+</resources>

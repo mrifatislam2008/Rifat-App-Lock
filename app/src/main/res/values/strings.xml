@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Rifat App Locker</string>
+    <string name="accessibility_service_label">Rifat App Locker Protection</string>
+    <string name="accessibility_service_description">Detects when protected applications are launched to display the security authentication screen. Rifat App Locker does not read screen content or record user input.</string>
+
+    <!-- General -->
+    <string name="developer_name">Molla Mohammad Rifat Osama</string>
+    <string name="telegram_channel_url">https://t.me/RiFAT_TECH_BD</string>
+    <string name="telegram_profile_url">https://t.me/Molla_Mohammad_Rifat_Osama</string>
+    <string name="telegram_username">@Molla_Mohammad_Rifat_Osama</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">App Protection Service</string>
+    <string name="notification_channel_desc">Shows ongoing background status for Rifat App Locker</string>
+    <string name="notification_title">Rifat App Locker is Active</string>
+    <string name="notification_content">Monitoring protected apps and guarding your privacy</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_apps">Manage Apps</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_developer">Developer</string>
+    <string name="nav_help">Troubleshoot</string>
+</resources>

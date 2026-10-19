@@ -1,0 +1,8 @@
+{
+  "name": "Remix Rifat App Locker",
+  "description": "Secure your Android applications with customizable password or pattern authentication using robust foreground monitoring and industry-standard security practices.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
