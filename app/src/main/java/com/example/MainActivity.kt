@@ -36,6 +36,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.data.model.FilterType
 import com.example.ui.common.AppLanguage
 import com.example.ui.common.AppStrings
 import com.example.ui.dashboard.DashboardScreen
@@ -87,6 +88,8 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
 
+                var manageAppsInitialFilter by remember { mutableStateOf(FilterType.ALL) }
+
                 val startDestination = remember {
                     if (!preferences.isSetupCompleted) {
                         Screen.Welcome.route
@@ -125,6 +128,9 @@ class MainActivity : ComponentActivity() {
                                     NavigationBarItem(
                                         selected = selected,
                                         onClick = {
+                                            if (screen == Screen.ManageApps) {
+                                                repository.setAppFilter(FilterType.ALL)
+                                            }
                                             if (currentRoute != screen.route) {
                                                 navController.navigate(screen.route) {
                                                     popUpTo(Screen.Dashboard.route) { saveState = true }
@@ -224,7 +230,10 @@ class MainActivity : ComponentActivity() {
                                     appPreferences = preferences,
                                     currentLanguage = currentLanguage,
                                     onToggleLanguage = { toggleLanguage() },
-                                    onNavigateToManageApps = { navController.navigate(Screen.ManageApps.route) },
+                                    onNavigateToManageApps = { filter ->
+                                        manageAppsInitialFilter = filter
+                                        navController.navigate(Screen.ManageApps.route)
+                                    },
                                     onNavigateToPermissions = { navController.navigate(Screen.SetupPermissions.route) },
                                     onNavigateToDeveloper = { navController.navigate(Screen.Developer.route) },
                                     onNavigateToTroubleshooting = { navController.navigate(Screen.Troubleshooting.route) }
@@ -235,6 +244,7 @@ class MainActivity : ComponentActivity() {
                                 ManageAppsScreen(
                                     appRepository = repository,
                                     appPreferences = preferences,
+                                    initialFilter = manageAppsInitialFilter,
                                     currentLanguage = currentLanguage,
                                     onToggleLanguage = { toggleLanguage() },
                                     onNavigateBack = { navController.navigate(Screen.Dashboard.route) }
@@ -247,6 +257,7 @@ class MainActivity : ComponentActivity() {
                                     currentLanguage = currentLanguage,
                                     onToggleLanguage = { toggleLanguage() },
                                     onChangeCredentialsClick = { navController.navigate(Screen.ChangeCredential.route) },
+                                    onNavigateToPermissions = { navController.navigate(Screen.SetupPermissions.route) },
                                     onNavigateBack = { navController.navigate(Screen.Dashboard.route) }
                                 )
                             }

@@ -67,7 +67,28 @@ object AppStrings {
         "telegram_channel_sub" to Pair("Join for security updates & releases", "নিরাপত্তা আপডেট ও খবরের জন্য যুক্ত হন"),
         "telegram_profile_sub" to Pair("Direct contact with developer", "ডেভেলপারের সাথে সরাসরি যোগাযোগ করুন"),
         "version_title" to Pair("App Version", "অ্যাপ সংস্করণ"),
-        "version_code" to Pair("1.0.0 (Production Build)", "১.০.০ (প্রোডাকশন সংস্করণ)"),
+        "version_code" to Pair("2.0.0", "২.০.০"),
+        "fingerprint_unlock" to Pair("Fingerprint Unlock", "ফিঙ্গারপ্রিন্ট আনলক"),
+        "fingerprint_unlock_desc" to Pair("Use device enrolled fingerprint for fast unlock", "ডিভাইসের নিবন্ধিত ফিঙ্গারপ্রিন্ট দিয়ে আনলক করুন"),
+        "face_unlock" to Pair("Face Unlock", "ফেস আনলক"),
+        "face_unlock_desc" to Pair("Use device supported biometric face authentication", "ডিভাইস সমর্থিত সুরক্ষিত ফেস বায়োমেট্রিক ব্যবহার করুন"),
+        "biometric_unlock" to Pair("Biometric Unlock", "বায়োমেট্রিক আনলক"),
+        "biometric_not_available" to Pair("Biometric hardware unavailable or not enrolled on device", "ডিভাইসে বায়োমেট্রিক সুবিধা অনুপস্থিত অথবা কোনো আঙুলের ছাপ নিবন্ধিত নেই"),
+        "biometric_tap_to_verify" to Pair("Verify with Biometrics", "বায়োমেট্রিক দিয়ে যাচাই করুন"),
+        "contact_whatsapp" to Pair("Contact Developer on WhatsApp", "হোয়াটসঅ্যাপে ডেভেলপারের সাথে যোগাযোগ"),
+        "whatsapp_not_installed" to Pair("WhatsApp is not installed on this device", "ডিভাইসে হোয়াটসঅ্যাপ ইনস্টল করা নেই"),
+        "whatsapp_number_not_set" to Pair("Developer WhatsApp number is not configured yet", "ডেভেলপারের হোয়াটসঅ্যাপ নম্বর এখনো সেট করা হয়নি"),
+        "configure_whatsapp" to Pair("Configure WhatsApp Number", "হোয়াটসঅ্যাপ নম্বর কনফিগার করুন"),
+        "privacy_policy" to Pair("Privacy Policy", "গোপনীয়তা নীতি"),
+        "open_source_licenses" to Pair("Open-Source Licenses", "ওপেন-সোর্স লাইসেন্স"),
+        "privacy_policy_text" to Pair(
+            "Rifat App Locker operates strictly 100% on-device. No telemetry, passwords, patterns, security answers, or app usage logs are ever collected, transmitted, or shared. All security configurations and salted cryptographic hashes are securely kept in local application sandbox storage.",
+            "রিফাত অ্যাপ লকার সম্পূর্ণ আপনার ডিভাইসের ভেতরে কাজ করে। কোনো পাসওয়ার্ড, প্যাটার্ন, সিকিউরিটি উত্তর বা অ্যাপ ব্যবহারের তথ্য কোনো সার্ভারে পাঠানো হয় না। সকল তথ্য আপনার ফোনেই সুরক্ষিত থাকে।"
+        ),
+        "license_text" to Pair(
+            "Rifat App Locker Version 2.0.0\nDeveloped by Molla Mohammad Rifat Osama\n\nBuilt with Android Jetpack, Compose Material 3, AndroidX Biometrics, and Kotlin Coroutines under Apache License 2.0.",
+            "রিফাত অ্যাপ লকার সংস্করণ ২.০.০\nস্থপতি ও ডেভেলপার: মোল্লা মোহাম্মদ রিফাত ওসামা\n\nঅ্যান্ড্রয়েড জেটপ্যাক, কম্পোজ ম্যাটেরিয়াল ৩, অ্যান্ড্রয়েডএক্স বায়োমেট্রিক এবং অ্যাপাচি লাইসেন্স ২.০ এর অধীনে নির্মিত।"
+        ),
         "tecno_hios_note" to Pair("TECNO / HiOS / MIUI Optimization", "TECNO / HiOS / MIUI এর জন্য পরামর্শ"),
         "tecno_hios_desc" to Pair(
             "On devices like TECNO Spark Go 2024 (HiOS) or Xiaomi (MIUI), the system kills background services aggressively. Enable 'Auto-start' and lock Rifat App Locker in the recent apps tray for 100% uninterrupted protection.",

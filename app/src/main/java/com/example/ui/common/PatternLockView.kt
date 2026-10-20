@@ -6,6 +6,9 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
@@ -25,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -37,6 +41,11 @@ enum class PatternState {
     ERROR
 }
 
+/**
+ * High-visibility, accessible 3x3 Pattern Lock View.
+ * Fully visible in both light (white card) and dark themes.
+ * Renders contrasting outer rings and distinct inner dots for all 9 nodes before and during interaction.
+ */
 @Composable
 fun PatternLockView(
     modifier: Modifier = Modifier,
@@ -58,12 +67,18 @@ fun PatternLockView(
     val selectedPoints = remember { mutableStateListOf<Int>() }
     var currentTouchPosition by remember { mutableStateOf<Offset?>(null) }
 
+    // Dynamic line and highlight color depending on validation state
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val errorColor = MaterialTheme.colorScheme.error
+
     val lineColor by animateColorAsState(
         targetValue = when (patternState) {
-            PatternState.INPUT -> MaterialTheme.colorScheme.primary
-            PatternState.SUCCESS -> MaterialTheme.colorScheme.tertiary
-            PatternState.ERROR -> MaterialTheme.colorScheme.error
+            PatternState.INPUT -> primaryColor
+            PatternState.SUCCESS -> tertiaryColor
+            PatternState.ERROR -> errorColor
         },
+        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
         label = "lineColor"
     )
 
@@ -80,9 +95,9 @@ fun PatternLockView(
 
     Box(
         modifier = modifier
-            .size(300.dp)
+            .size(310.dp)
             .aspectRatio(1f)
-            .padding(16.dp),
+            .padding(12.dp),
         contentAlignment = Alignment.Center
     ) {
         Canvas(
@@ -138,7 +153,7 @@ fun PatternLockView(
                 )
             }
 
-            // Draw connecting lines between already visited dots
+            // 1. Draw connecting lines between visited nodes
             if (selectedPoints.size > 1) {
                 for (i in 0 until selectedPoints.size - 1) {
                     val p1 = getCenterOfPoint(selectedPoints[i])
@@ -153,11 +168,11 @@ fun PatternLockView(
                 }
             }
 
-            // Draw line to current touch drag position
+            // 2. Draw line from the active node to the current pointer position
             if (selectedPoints.isNotEmpty() && currentTouchPosition != null && patternState == PatternState.INPUT) {
                 val lastPointCenter = getCenterOfPoint(selectedPoints.last())
                 drawLine(
-                    color = lineColor.copy(alpha = 0.7f),
+                    color = lineColor.copy(alpha = 0.85f),
                     start = lastPointCenter,
                     end = currentTouchPosition!!,
                     strokeWidth = 5.dp.toPx(),
@@ -165,38 +180,75 @@ fun PatternLockView(
                 )
             }
 
-            // Draw 3x3 Nodes
+            // 3. Draw All 9 Nodes with high contrast outer rings & inner dots
+            val outerRadius = 26.dp.toPx()
+            val innerDotRadius = 8.dp.toPx()
+            val inactiveRingColor = primaryColor.copy(alpha = 0.38f)
+            val inactiveDotColor = primaryColor.copy(alpha = 0.85f)
+            val inactiveFillColor = primaryColor.copy(alpha = 0.06f)
+
             for (idx in 0 until 9) {
                 val center = getCenterOfPoint(idx)
                 val isSelected = selectedPoints.contains(idx)
-
-                val outerRadius = 24.dp.toPx()
-                val innerRadius = 7.dp.toPx()
+                val isActiveNode = selectedPoints.isNotEmpty() && selectedPoints.last() == idx
 
                 if (isSelected) {
-                    // Outer glow circle
+                    if (isActiveNode) {
+                        // Active (current) node: Larger animated glow + outer ring + bright inner dot
+                        drawCircle(
+                            color = lineColor.copy(alpha = 0.32f),
+                            radius = outerRadius * 1.15f,
+                            center = center
+                        )
+                        drawCircle(
+                            color = lineColor,
+                            radius = outerRadius * 1.15f,
+                            center = center,
+                            style = Stroke(width = 3.dp.toPx())
+                        )
+                        drawCircle(
+                            color = lineColor,
+                            radius = innerDotRadius * 1.4f,
+                            center = center
+                        )
+                    } else {
+                        // Previously selected node
+                        drawCircle(
+                            color = lineColor.copy(alpha = 0.20f),
+                            radius = outerRadius,
+                            center = center
+                        )
+                        drawCircle(
+                            color = lineColor,
+                            radius = outerRadius,
+                            center = center,
+                            style = Stroke(width = 2.5.dp.toPx())
+                        )
+                        drawCircle(
+                            color = lineColor,
+                            radius = innerDotRadius * 1.25f,
+                            center = center
+                        )
+                    }
+                } else {
+                    // Inactive unselected node: Distinct visible outer ring + dark/teal inner dot
+                    // Subtly filled background disc for hit affordance
                     drawCircle(
-                        color = lineColor.copy(alpha = 0.25f),
+                        color = inactiveFillColor,
                         radius = outerRadius,
                         center = center
                     )
+                    // Visible outer border ring
                     drawCircle(
-                        color = lineColor,
+                        color = inactiveRingColor,
                         radius = outerRadius,
                         center = center,
                         style = Stroke(width = 2.dp.toPx())
                     )
-                    // Inner filled dot
+                    // Prominent inner dot (NEVER invisible on white or dark backgrounds)
                     drawCircle(
-                        color = lineColor,
-                        radius = innerRadius * 1.3f,
-                        center = center
-                    )
-                } else {
-                    // Inactive dot
-                    drawCircle(
-                        color = Color.White.copy(alpha = 0.35f),
-                        radius = innerRadius,
+                        color = inactiveDotColor,
+                        radius = innerDotRadius,
                         center = center
                     )
                 }
@@ -208,7 +260,7 @@ fun PatternLockView(
 private fun getHitPoint(offset: Offset, width: Float, height: Float): Int? {
     val cellWidth = width / 3f
     val cellHeight = height / 3f
-    val hitRadius = cellWidth * 0.38f
+    val hitRadius = cellWidth * 0.40f
 
     for (row in 0 until 3) {
         for (col in 0 until 3) {

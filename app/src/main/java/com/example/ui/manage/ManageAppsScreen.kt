@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.RemoveDone
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -45,6 +46,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,6 +66,7 @@ import com.example.data.model.AppInfo
 import com.example.data.model.FilterType
 import com.example.data.preferences.AppPreferences
 import com.example.data.repository.AppRepository
+import com.example.service.ServiceHelper
 import com.example.ui.common.AppDrawableIcon
 import com.example.ui.common.AppLanguage
 import com.example.ui.common.AppStrings
@@ -70,6 +74,7 @@ import com.example.ui.common.CyberCard
 import com.example.ui.common.RifatTopBar
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.ShieldGreen
+import com.example.ui.theme.ShieldOrange
 import com.example.ui.theme.ShieldRed
 import kotlinx.coroutines.launch
 
@@ -78,10 +83,12 @@ import kotlinx.coroutines.launch
 fun ManageAppsScreen(
     appRepository: AppRepository,
     appPreferences: AppPreferences,
+    initialFilter: FilterType = FilterType.ALL,
     currentLanguage: AppLanguage,
     onToggleLanguage: () -> Unit,
     onNavigateBack: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -90,7 +97,11 @@ fun ManageAppsScreen(
     val lockedPackages by appPreferences.lockedPackagesFlow.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
-    var selectedFilter by remember { mutableStateOf(FilterType.ALL) }
+    val selectedFilter by appRepository.selectedFilterFlow.collectAsState()
+
+    val hasAccessibility = ServiceHelper.isAccessibilityServiceEnabled(context)
+    val hasUsageStats = ServiceHelper.hasUsageStatsPermission(context)
+    val isEnforcementOperational = hasAccessibility || hasUsageStats
 
     // Filter logic
     val filteredApps = remember(installedApps, lockedPackages, searchQuery, selectedFilter) {
@@ -128,6 +139,35 @@ fun ManageAppsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // Enforcement Warning Banner if permissions are missing
+            if (!isEnforcementOperational && lockedPackages.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(ShieldOrange.copy(alpha = 0.15f))
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = ShieldOrange,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (currentLanguage == AppLanguage.BENGALI)
+                                "লক চিহ্নিত করা হয়েছে কিন্তু এক্সেসিবিলিটি সার্ভিস সক্রিয় না থাকায় তা বলবৎ হবে না।"
+                            else
+                                "Apps are selected, but Accessibility Service is needed to enforce actual locking.",
+                            fontSize = 11.sp,
+                            color = ShieldOrange,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
             // Search & Controls Bar
             Column(
                 modifier = Modifier
@@ -174,7 +214,7 @@ fun ManageAppsScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         FilterChip(
                             selected = selectedFilter == FilterType.ALL,
-                            onClick = { selectedFilter = FilterType.ALL },
+                            onClick = { appRepository.setAppFilter(FilterType.ALL) },
                             label = { Text("${AppStrings.get("filter_all", currentLanguage)} (${installedApps.size})", fontSize = 11.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -183,7 +223,7 @@ fun ManageAppsScreen(
                         )
                         FilterChip(
                             selected = selectedFilter == FilterType.LOCKED,
-                            onClick = { selectedFilter = FilterType.LOCKED },
+                            onClick = { appRepository.setAppFilter(FilterType.LOCKED) },
                             label = { Text("${AppStrings.get("filter_locked", currentLanguage)} (${lockedPackages.size})", fontSize = 11.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = ShieldGreen.copy(alpha = 0.2f),
@@ -192,7 +232,7 @@ fun ManageAppsScreen(
                         )
                         FilterChip(
                             selected = selectedFilter == FilterType.UNLOCKED,
-                            onClick = { selectedFilter = FilterType.UNLOCKED },
+                            onClick = { appRepository.setAppFilter(FilterType.UNLOCKED) },
                             label = {
                                 Text(
                                     "${AppStrings.get("filter_unlocked", currentLanguage)} (${(installedApps.size - lockedPackages.size).coerceAtLeast(0)})",
@@ -267,7 +307,7 @@ fun ManageAppsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (currentLanguage == AppLanguage.BENGALI) "কোনো অ্যাপ পাওয়া যায়নি" else "No applications match your search",
+                        text = if (currentLanguage == AppLanguage.BENGALI) "কোনো অ্যাপ পাওয়া যায়নি" else "No applications match your filter",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )

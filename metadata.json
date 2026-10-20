@@ -1,6 +1,6 @@
 {
-  "name": "Remix Rifat App Locker",
-  "description": "Secure your Android applications with customizable password or pattern authentication using robust foreground monitoring and industry-standard security practices.",
+  "name": "Rifat App Locker",
+  "description": "Rifat App Locker Version 2.0.0 by Molla Mohammad Rifat Osama. Enterprise-grade Android app protection featuring PIN, pattern, and biometric security with real-time foreground detection and 100% on-device privacy.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

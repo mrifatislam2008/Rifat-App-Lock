@@ -28,6 +28,9 @@ class AppPreferences(context: Context) {
         private const val KEY_LANGUAGE = "key_language"
         private const val KEY_FAILED_ATTEMPTS = "key_failed_attempts"
         private const val KEY_LOCKOUT_UNTIL = "key_lockout_until"
+        private const val KEY_FINGERPRINT_ENABLED = "key_fingerprint_enabled"
+        private const val KEY_FACE_UNLOCK_ENABLED = "key_face_unlock_enabled"
+        private const val KEY_DEVELOPER_WHATSAPP_NUMBER = "key_developer_whatsapp_number"
     }
 
     private val _isAppLockerEnabledFlow = MutableStateFlow(isAppLockerEnabled)
@@ -117,6 +120,18 @@ class AppPreferences(context: Context) {
     var lockoutUntilTimestamp: Long
         get() = prefs.getLong(KEY_LOCKOUT_UNTIL, 0L)
         set(value) = prefs.edit().putLong(KEY_LOCKOUT_UNTIL, value).apply()
+
+    var isFingerprintEnabled: Boolean
+        get() = prefs.getBoolean(KEY_FINGERPRINT_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_FINGERPRINT_ENABLED, value).apply()
+
+    var isFaceUnlockEnabled: Boolean
+        get() = prefs.getBoolean(KEY_FACE_UNLOCK_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_FACE_UNLOCK_ENABLED, value).apply()
+
+    var developerWhatsAppNumber: String
+        get() = prefs.getString(KEY_DEVELOPER_WHATSAPP_NUMBER, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_DEVELOPER_WHATSAPP_NUMBER, value.trim()).apply()
 
     fun addLockedPackage(pkg: String) {
         val current = HashSet(lockedPackages)

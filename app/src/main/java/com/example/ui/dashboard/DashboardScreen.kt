@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -53,6 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.FilterType
 import com.example.data.preferences.AppPreferences
 import com.example.data.repository.AppRepository
 import com.example.service.ServiceHelper
@@ -72,7 +74,7 @@ fun DashboardScreen(
     appPreferences: AppPreferences,
     currentLanguage: AppLanguage,
     onToggleLanguage: () -> Unit,
-    onNavigateToManageApps: () -> Unit,
+    onNavigateToManageApps: (FilterType) -> Unit,
     onNavigateToPermissions: () -> Unit,
     onNavigateToDeveloper: () -> Unit,
     onNavigateToTroubleshooting: () -> Unit
@@ -92,7 +94,7 @@ fun DashboardScreen(
     val hasAccessibility = ServiceHelper.isAccessibilityServiceEnabled(context)
     val hasUsageStats = ServiceHelper.hasUsageStatsPermission(context)
     val hasOverlay = ServiceHelper.hasOverlayPermission(context)
-    val isSystemReady = hasAccessibility && hasUsageStats && hasOverlay
+    val isSystemReady = hasAccessibility && (hasUsageStats || hasOverlay)
 
     Column(
         modifier = Modifier
@@ -112,18 +114,18 @@ fun DashboardScreen(
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
             // MASTER PROTECTION STATUS HERO CARD
-            CyberCard(borderGlow = isAppLockerEnabled) {
+            CyberCard(borderGlow = isAppLockerEnabled && isSystemReady) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
                             Brush.linearGradient(
-                                if (isAppLockerEnabled) listOf(
+                                if (isAppLockerEnabled && isSystemReady) listOf(
                                     MaterialTheme.colorScheme.surface,
                                     MaterialTheme.colorScheme.surfaceVariant
                                 ) else listOf(
                                     MaterialTheme.colorScheme.surface,
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
                                 )
                             )
                         )
@@ -135,21 +137,29 @@ fun DashboardScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Box(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .clip(CircleShape)
                                         .background(
-                                            if (isAppLockerEnabled) ShieldGreen.copy(alpha = 0.15f)
+                                            if (isAppLockerEnabled && isSystemReady) ShieldGreen.copy(alpha = 0.15f)
+                                            else if (isAppLockerEnabled) ShieldOrange.copy(alpha = 0.15f)
                                             else ShieldRed.copy(alpha = 0.15f)
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = if (isAppLockerEnabled) Icons.Default.Shield else Icons.Default.PowerSettingsNew,
+                                        imageVector = if (isAppLockerEnabled && isSystemReady) Icons.Default.Shield
+                                        else if (isAppLockerEnabled) Icons.Default.Warning
+                                        else Icons.Default.PowerSettingsNew,
                                         contentDescription = null,
-                                        tint = if (isAppLockerEnabled) ShieldGreen else ShieldRed,
+                                        tint = if (isAppLockerEnabled && isSystemReady) ShieldGreen
+                                        else if (isAppLockerEnabled) ShieldOrange
+                                        else ShieldRed,
                                         modifier = Modifier.size(26.dp)
                                     )
                                 }
@@ -158,24 +168,33 @@ fun DashboardScreen(
 
                                 Column {
                                     Text(
-                                        text = if (isAppLockerEnabled) AppStrings.get("protection_active", currentLanguage)
-                                        else AppStrings.get("protection_paused", currentLanguage),
+                                        text = if (!isAppLockerEnabled) {
+                                            AppStrings.get("protection_paused", currentLanguage)
+                                        } else if (isSystemReady) {
+                                            AppStrings.get("protection_active", currentLanguage)
+                                        } else {
+                                            if (currentLanguage == AppLanguage.BENGALI) "অনুমতি অসম্পূর্ণ — লক নিষ্ক্রিয়" else "Setup Required (Not Enforced)"
+                                        },
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 17.sp,
+                                        fontSize = 16.sp,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = if (isAppLockerEnabled) {
-                                            if (currentLanguage == AppLanguage.BENGALI) "রিয়েল-টাইম নিরাপত্তা সক্রিয়" else "Guarding protected apps"
+                                        text = if (!isAppLockerEnabled) {
+                                            if (currentLanguage == AppLanguage.BENGALI) "লকার সাময়িক স্থগিত রয়েছে" else "Locker is currently disabled"
+                                        } else if (isSystemReady) {
+                                            if (currentLanguage == AppLanguage.BENGALI) "রিয়েল-টাইম সুরক্ষা পুরোপুরি সক্রিয়" else "Enforcement active and guarding apps"
                                         } else {
-                                            if (currentLanguage == AppLanguage.BENGALI) "লকার সাময়িক স্থগিত" else "Locker is currently disabled"
+                                            if (currentLanguage == AppLanguage.BENGALI) "অনুমতি না থাকায় লক চালু হতে পারছে না" else "Missing permissions prevent actual locking"
                                         },
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
+
+                            Spacer(modifier = Modifier.width(8.dp))
 
                             Switch(
                                 checked = isAppLockerEnabled,
@@ -215,7 +234,10 @@ fun DashboardScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = if (currentLanguage == AppLanguage.BENGALI) "কিছু অনুমতি বাকি রয়েছে। ট্যাপ করে অনুমতি দিন।" else "Permissions incomplete. Tap to configure.",
+                                        text = if (currentLanguage == AppLanguage.BENGALI)
+                                            "এক্সেসিবিলিটি বা ইউসেজ এক্সেস অনুমতি বাকি। ট্যাপ করে অনুমতি দিন।"
+                                        else
+                                            "Enforcement permission missing. Tap to grant for real protection.",
                                         fontSize = 12.sp,
                                         color = ShieldOrange,
                                         fontWeight = FontWeight.SemiBold
@@ -229,34 +251,46 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // STATS 3-GRID CARDS
+            // STATS 3-GRID CARDS (ALL THREE CLICKABLE AS MANDATED BY REQUIREMENT 3)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                StatCard(
+                ClickableStatCard(
                     modifier = Modifier.weight(1f),
                     title = AppStrings.get("total_apps", currentLanguage),
                     count = totalApps,
                     icon = Icons.Default.Apps,
                     accentColor = CyberCyan,
-                    isLoading = isLoading
+                    isLoading = isLoading,
+                    onClick = {
+                        appRepository.setAppFilter(FilterType.ALL)
+                        onNavigateToManageApps(FilterType.ALL)
+                    }
                 )
-                StatCard(
+                ClickableStatCard(
                     modifier = Modifier.weight(1f),
                     title = AppStrings.get("locked_apps", currentLanguage),
                     count = lockedCount,
                     icon = Icons.Default.Lock,
                     accentColor = ShieldGreen,
-                    isLoading = isLoading
+                    isLoading = isLoading,
+                    onClick = {
+                        appRepository.setAppFilter(FilterType.LOCKED)
+                        onNavigateToManageApps(FilterType.LOCKED)
+                    }
                 )
-                StatCard(
+                ClickableStatCard(
                     modifier = Modifier.weight(1f),
                     title = AppStrings.get("unlocked_apps", currentLanguage),
                     count = unlockedCount,
                     icon = Icons.Default.LockOpen,
                     accentColor = ShieldOrange,
-                    isLoading = isLoading
+                    isLoading = isLoading,
+                    onClick = {
+                        appRepository.setAppFilter(FilterType.UNLOCKED)
+                        onNavigateToManageApps(FilterType.UNLOCKED)
+                    }
                 )
             }
 
@@ -310,7 +344,7 @@ fun DashboardScreen(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                            .clickable { onNavigateToManageApps() }
+                            .clickable { onNavigateToManageApps(FilterType.ALL) }
                             .padding(14.dp)
                     ) {
                         Row(
@@ -353,7 +387,7 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // DEVELOPER ATTRIBUTION CARD
+            // DEVELOPER ATTRIBUTION CARD (Without fabricated verification badge)
             CyberCard {
                 Box(
                     modifier = Modifier
@@ -390,7 +424,7 @@ fun DashboardScreen(
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Telegram: @Molla_Mohammad_Rifat_Osama",
+                                    text = if (currentLanguage == AppLanguage.BENGALI) "টেলিগ্রাম ও সহায়তা দেখতে ট্যাপ করুন" else "Tap for Telegram channels & developer info",
                                     fontSize = 11.sp,
                                     color = CyberCyan
                                 )
@@ -412,16 +446,17 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun StatCard(
+private fun ClickableStatCard(
     modifier: Modifier = Modifier,
     title: String,
     count: Int,
     icon: ImageVector,
     accentColor: Color,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -433,18 +468,31 @@ private fun StatCard(
                 .fillMaxWidth()
                 .padding(12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(accentColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(accentColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
                 Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(18.dp)
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = "Open Filter",
+                    tint = accentColor.copy(alpha = 0.6f),
+                    modifier = Modifier.size(14.dp)
                 )
             }
             Spacer(modifier = Modifier.height(10.dp))

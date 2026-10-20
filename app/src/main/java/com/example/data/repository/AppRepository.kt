@@ -30,6 +30,13 @@ class AppRepository(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _selectedFilterFlow = MutableStateFlow(com.example.data.model.FilterType.ALL)
+    val selectedFilterFlow: StateFlow<com.example.data.model.FilterType> = _selectedFilterFlow.asStateFlow()
+
+    fun setAppFilter(filter: com.example.data.model.FilterType) {
+        _selectedFilterFlow.value = filter
+    }
+
     // Temporary unlock session timestamps: packageName -> unlockTimestampMillis
     private val unlockedSessions = ConcurrentHashMap<String, Long>()
     @Volatile

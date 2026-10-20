@@ -21,27 +21,32 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Verified
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,13 +68,26 @@ fun DeveloperInfoScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    fun openUrl(url: String) {
+    var showPrivacyDialog by remember { mutableStateOf(false) }
+    var showLicenseDialog by remember { mutableStateOf(false) }
+
+    fun openTelegram(destinationUrl: String) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            val uri = Uri.parse(destinationUrl)
+            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                setPackage("org.telegram.messenger")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             context.startActivity(intent)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            // Fall back to web browser
+            try {
+                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(destinationUrl)).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(webIntent)
+            } catch (_: Exception) {}
+        }
     }
 
     Column(
@@ -94,7 +112,7 @@ fun DeveloperInfoScreen(
         ) {
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Developer Avatar & Verification Badge
+            // Developer Avatar (Clean and authoritative, no artificial verification badge)
             Box(
                 modifier = Modifier
                     .size(90.dp)
@@ -116,21 +134,13 @@ fun DeveloperInfoScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Molla Mohammad Rifat Osama",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.Default.Verified,
-                    contentDescription = "Verified Developer",
-                    tint = CyberCyan,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            // Developer Name exactly: Molla Mohammad Rifat Osama
+            Text(
+                text = "Molla Mohammad Rifat Osama",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
 
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -143,9 +153,9 @@ fun DeveloperInfoScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // TELEGRAM SECTION
+            // TWO CONTACT CARDS (Containing ONLY Telegram Icon and Label "Telegram Channel" / "Telegram Profile")
             Text(
-                text = if (currentLanguage == AppLanguage.BENGALI) "টেলিগ্রাম যোগাযোগ ও চ্যানেল" else "Telegram Channels & Profiles",
+                text = if (currentLanguage == AppLanguage.BENGALI) "টেলিগ্রাম যোগাযোগ" else "Developer Channels",
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -154,31 +164,109 @@ fun DeveloperInfoScreen(
                     .padding(start = 4.dp, bottom = 8.dp)
             )
 
-            // Clickable Telegram Channel
+            // Card 1: Telegram Channel
             CyberCard {
-                Column {
-                    TelegramClickableRow(
-                        title = AppStrings.get("telegram_channel", currentLanguage),
-                        subtitle = "https://t.me/RiFAT_TECH_BD",
-                        badge = if (currentLanguage == AppLanguage.BENGALI) "চ্যানেল" else "Channel",
-                        onClick = { openUrl("https://t.me/RiFAT_TECH_BD") }
-                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { openTelegram("https://t.me/RiFAT_TECH_BD") }
+                        .padding(18.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF229ED9).copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Send,
+                                    contentDescription = "Telegram",
+                                    tint = Color(0xFF229ED9),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.width(14.dp))
 
-                    // Clickable Telegram ID / Profile
-                    TelegramClickableRow(
-                        title = AppStrings.get("telegram_profile", currentLanguage),
-                        subtitle = "@Molla_Mohammad_Rifat_Osama",
-                        badge = if (currentLanguage == AppLanguage.BENGALI) "প্রোফাইল" else "Profile",
-                        onClick = { openUrl("https://t.me/Molla_Mohammad_Rifat_Osama") }
-                    )
+                            Text(
+                                text = "Telegram Channel",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = "Open Channel",
+                            tint = Color(0xFF229ED9),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Card 2: Telegram Profile
+            CyberCard {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { openTelegram("https://t.me/Molla_Mohammad_Rifat_Osama") }
+                        .padding(18.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF229ED9).copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Send,
+                                    contentDescription = "Telegram",
+                                    tint = Color(0xFF229ED9),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Text(
+                                text = "Telegram Profile",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = "Open Profile",
+                            tint = Color(0xFF229ED9),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ABOUT APPLICATION SECTION
+            // ABOUT APPLICATION SECTION (App Version 2.0.0)
             Text(
                 text = if (currentLanguage == AppLanguage.BENGALI) "অ্যাপ তথ্য ও সংস্করণ" else "About Application",
                 fontWeight = FontWeight.Bold,
@@ -193,6 +281,34 @@ fun DeveloperInfoScreen(
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = AppStrings.get("app_name", currentLanguage),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "v2.0.0",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
@@ -201,20 +317,22 @@ fun DeveloperInfoScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = AppStrings.get("version_code", currentLanguage),
+                            text = "2.0.0",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = if (currentLanguage == AppLanguage.BENGALI) "রিফাত অ্যাপ লকার একটি নেটিভ অ্যান্ড্রয়েড সিকিউরিটি অ্যাপ, যা আধুনিক জেটপ্যাক কম্পোজ এবং অ্যান্ড্রয়েড অ্যাক্সেসিবিলিটি সার্ভিসের সহায়তায় তৈরি করা হয়েছে। কোনো প্রকার ক্লাউড সার্ভার সংযোগ ছাড়াই ব্যবহারকারীর সম্পূর্ণ গোপনীয়তা এবং সর্বোচ্চ নিরাপত্তা প্রদান করা এর মূল লক্ষ্য।"
-                        else "Rifat App Locker is a high-performance native Android application engineered using Jetpack Compose, Material 3, and Android system accessibility architecture. Designed to operate completely offline with salted cryptographic verification, providing enterprise-grade on-device security without collecting or syncing any user telemetry.",
+                        text = if (currentLanguage == AppLanguage.BENGALI)
+                            "রিফাত অ্যাপ লকার সংস্করণ ২.০.০ একটি শক্তিশালী দেশীয় অ্যান্ড্রয়েড সিকিউরিটি স্যুট। এটি জেটপ্যাক কম্পোজ, ম্যাটেরিয়াল ৩, অ্যাক্সেসিবিলিটি সার্ভিস এবং অ্যান্ড্রয়েড বায়োমেট্রিক ফ্রেমওয়ার্ক দিয়ে তৈরি। সম্পূর্ণ অফলাইন এবং জিরো-ক্লাউড ট্র্যাকিং নীতিমালার অধীনে নির্মিত।"
+                        else
+                            "Rifat App Locker Version 2.0.0 is an enterprise-grade Android security solution engineered using Jetpack Compose, Material 3, Android Accessibility Service, and AndroidX Biometrics. Operates strictly 100% on-device with salted cryptographic verification and zero telemetry tracking.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 18.sp
@@ -234,11 +352,33 @@ fun DeveloperInfoScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (currentLanguage == AppLanguage.BENGALI) "শতভাগ বিজ্ঞাপনমুক্ত ও নিরাপদ কোডিং" else "100% Ad-Free, Open Architecture, Privacy-First",
+                            text = if (currentLanguage == AppLanguage.BENGALI) "১০০% অফলাইন এবং গোপনীয়" else "100% Offline & Private Security Architecture",
                             fontSize = 11.sp,
                             color = ShieldGreen,
                             fontWeight = FontWeight.SemiBold
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Privacy Policy & License links
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        TextButton(onClick = { showPrivacyDialog = true }) {
+                            Icon(Icons.Default.Policy, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(AppStrings.get("privacy_policy", currentLanguage), fontSize = 12.sp)
+                        }
+
+                        TextButton(onClick = { showLicenseDialog = true }) {
+                            Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(AppStrings.get("open_source_licenses", currentLanguage), fontSize = 12.sp)
+                        }
                     }
                 }
             }
@@ -246,81 +386,54 @@ fun DeveloperInfoScreen(
             Spacer(modifier = Modifier.height(28.dp))
         }
     }
-}
 
-@Composable
-private fun TelegramClickableRow(
-    title: String,
-    subtitle: String,
-    badge: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF229ED9).copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Send,
-                    contentDescription = null,
-                    tint = Color(0xFF229ED9),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = title,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFF229ED9).copy(alpha = 0.15f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = badge,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF229ED9)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(2.dp))
+    if (showPrivacyDialog) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyDialog = false },
+            title = {
                 Text(
-                    text = subtitle,
-                    fontSize = 13.sp,
-                    color = CyberCyan
+                    text = AppStrings.get("privacy_policy", currentLanguage),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
                 )
+            },
+            text = {
+                Text(
+                    text = AppStrings.get("privacy_policy_text", currentLanguage),
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp
+                )
+            },
+            confirmButton = {
+                Button(onClick = { showPrivacyDialog = false }) {
+                    Text("OK")
+                }
             }
-        }
+        )
+    }
 
-        Icon(
-            imageVector = Icons.Default.OpenInBrowser,
-            contentDescription = "Open Link",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
+    if (showLicenseDialog) {
+        AlertDialog(
+            onDismissRequest = { showLicenseDialog = false },
+            title = {
+                Text(
+                    text = AppStrings.get("open_source_licenses", currentLanguage),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Text(
+                    text = AppStrings.get("license_text", currentLanguage),
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp
+                )
+            },
+            confirmButton = {
+                Button(onClick = { showLicenseDialog = false }) {
+                    Text("OK")
+                }
+            }
         )
     }
 }

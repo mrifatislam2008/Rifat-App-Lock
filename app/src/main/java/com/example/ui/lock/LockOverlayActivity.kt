@@ -2,12 +2,12 @@ package com.example.ui.lock
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -34,7 +34,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Security
@@ -43,8 +46,6 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +64,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -74,13 +74,14 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import com.example.RifatAppLockerApplication
 import com.example.data.model.LockType
 import com.example.data.model.SecurityQuestion
+import com.example.data.security.BiometricHelper
 import com.example.ui.common.AppDrawableIcon
 import com.example.ui.common.AppLanguage
 import com.example.ui.common.AppStrings
-import com.example.ui.common.CyberCard
 import com.example.ui.common.GradientButton
 import com.example.ui.common.PatternLockView
 import com.example.ui.common.PatternState
@@ -88,10 +89,11 @@ import com.example.ui.common.toPatternString
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.MidnightDark
 import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.theme.ShieldGreen
 import com.example.ui.theme.ShieldRed
 import kotlinx.coroutines.delay
 
-class LockOverlayActivity : ComponentActivity() {
+class LockOverlayActivity : FragmentActivity() {
 
     companion object {
         const val EXTRA_PACKAGE_NAME = "extra_package_name"
@@ -111,10 +113,14 @@ class LockOverlayActivity : ComponentActivity() {
         setContent {
             MyApplicationTheme(darkTheme = true) {
                 LockScreenContent(
+                    activity = this@LockOverlayActivity,
                     targetPackage = targetPackage,
                     appName = repo.getAppName(targetPackage),
                     appIcon = repo.getAppIcon(targetPackage),
                     lockType = prefs.lockType,
+                    isBiometricEnabled = prefs.isFingerprintEnabled || prefs.isFaceUnlockEnabled,
+                    developerWhatsAppNumber = prefs.developerWhatsAppNumber,
+                    onSaveWhatsAppNumber = { prefs.developerWhatsAppNumber = it },
                     currentLanguage = if (prefs.language == "bn") AppLanguage.BENGALI else AppLanguage.ENGLISH,
                     onSuccessfulUnlock = {
                         repo.markPackageTemporarilyUnlocked(targetPackage)
@@ -148,10 +154,14 @@ class LockOverlayActivity : ComponentActivity() {
 
 @Composable
 fun LockScreenContent(
+    activity: FragmentActivity,
     targetPackage: String,
     appName: String,
     appIcon: android.graphics.drawable.Drawable?,
     lockType: LockType,
+    isBiometricEnabled: Boolean,
+    developerWhatsAppNumber: String,
+    onSaveWhatsAppNumber: (String) -> Unit,
     currentLanguage: AppLanguage,
     onSuccessfulUnlock: () -> Unit,
     onBackToHome: () -> Unit,
@@ -198,9 +208,39 @@ fun LockScreenContent(
     var showRecoveryDialog by remember { mutableStateOf(false) }
     var recoveryAnswerInput by remember { mutableStateOf("") }
     var recoveryError by remember { mutableStateOf<String?>(null) }
+    var showWhatsAppConfigDialog by remember { mutableStateOf(false) }
+    var whatsAppConfigInput by remember { mutableStateOf(developerWhatsAppNumber) }
 
     val presetQuestions = SecurityQuestion.PRESET_QUESTIONS
     val currentQuestion = presetQuestions.find { it.id == securityQuestionId } ?: presetQuestions.first()
+
+    fun triggerBiometrics() {
+        if (BiometricHelper.isBiometricAvailable(activity)) {
+            BiometricHelper.showBiometricPrompt(
+                activity = activity,
+                title = appName.ifBlank { "Rifat App Locker" },
+                subtitle = if (currentLanguage == AppLanguage.BENGALI) "লক খুলতে ফিঙ্গারপ্রিন্ট অথবা ফেস স্ক্যান করুন" else "Authenticate with Biometrics to access app",
+                negativeButtonText = if (currentLanguage == AppLanguage.BENGALI) "কোড ব্যবহার করুন" else "Use PIN / Pattern",
+                onSuccess = {
+                    onSuccessfulUnlock()
+                },
+                onError = { _, errString ->
+                    // Fall back quietly to primary PIN/Pattern
+                },
+                onFailed = {
+                    errorVibrate()
+                }
+            )
+        }
+    }
+
+    // Auto-prompt biometrics once on screen launch if enabled
+    LaunchedEffect(Unit) {
+        if (isBiometricEnabled && BiometricHelper.isBiometricAvailable(activity)) {
+            delay(350)
+            triggerBiometrics()
+        }
+    }
 
     LaunchedEffect(lockoutSeconds) {
         if (lockoutSeconds > 0) {
@@ -217,6 +257,31 @@ fun LockScreenContent(
             errorMessage = if (currentLanguage == AppLanguage.BENGALI) "অতিরিক্ত ভুল প্রচেষ্টা। ৩০ সেকেন্ড অপেক্ষা করুন।" else "Too many failed attempts. Wait 30 seconds."
         } else {
             errorMessage = "${AppStrings.get("wrong_credential", currentLanguage)} ($failedCount/5)"
+        }
+    }
+
+    fun openWhatsAppSupport() {
+        val numberToUse = developerWhatsAppNumber.trim().replace("+", "").replace(" ", "").replace("-", "")
+        if (numberToUse.isBlank()) {
+            showWhatsAppConfigDialog = true
+            return
+        }
+
+        try {
+            val waUri = Uri.parse("https://wa.me/$numberToUse?text=${Uri.encode("Hello Molla Mohammad Rifat Osama, I need support for Rifat App Locker.")}")
+            val waIntent = Intent(Intent.ACTION_VIEW, waUri).apply {
+                setPackage("com.whatsapp")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(waIntent)
+        } catch (e: Exception) {
+            // Fallback to browser
+            try {
+                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$numberToUse")).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(browserIntent)
+            } catch (_: Exception) {}
         }
     }
 
@@ -274,7 +339,7 @@ fun LockScreenContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // AUTHENTICATION WIDGET
             if (lockType == LockType.PASSWORD) {
@@ -333,12 +398,12 @@ fun LockScreenContent(
                     }
                 )
             } else {
-                // PATTERN GRID
+                // PATTERN GRID (High visibility contrast fixed)
                 Text(
                     text = AppStrings.get("draw_pattern", currentLanguage),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = Color.White.copy(alpha = 0.85f)
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -360,6 +425,30 @@ fun LockScreenContent(
                         patternState = PatternState.INPUT
                     }
                 )
+            }
+
+            // Optional Biometric Action Button if device supports it
+            if (isBiometricEnabled && BiometricHelper.isBiometricAvailable(activity)) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = { triggerBiometrics() },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Fingerprint,
+                        contentDescription = "Biometric Unlock",
+                        tint = CyberCyan,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = AppStrings.get("biometric_tap_to_verify", currentLanguage),
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
             // Error feedback
@@ -449,6 +538,30 @@ fun LockScreenContent(
                             fontSize = 12.sp
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Contact Developer on WhatsApp button
+                    Button(
+                        onClick = { openWhatsAppSupport() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Chat,
+                            contentDescription = "WhatsApp",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = AppStrings.get("contact_whatsapp", currentLanguage),
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -467,6 +580,60 @@ fun LockScreenContent(
             },
             dismissButton = {
                 TextButton(onClick = { showRecoveryDialog = false }) {
+                    Text(if (currentLanguage == AppLanguage.BENGALI) "বাতিল" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // Configure WhatsApp Number Dialog (when not configured yet)
+    if (showWhatsAppConfigDialog) {
+        AlertDialog(
+            onDismissRequest = { showWhatsAppConfigDialog = false },
+            title = {
+                Text(
+                    text = AppStrings.get("configure_whatsapp", currentLanguage),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = if (currentLanguage == AppLanguage.BENGALI)
+                            "ডেভেলপার হোয়াটসঅ্যাপ নম্বর আন্তর্জাতিক ফরম্যাটে (যেমন: +৮৮০...) লিখুন:"
+                        else
+                            "Developer must configure their phone number in international format (e.g. +880...):",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = whatsAppConfigInput,
+                        onValueChange = { whatsAppConfigInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        placeholder = { Text("+8801...") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onSaveWhatsAppNumber(whatsAppConfigInput)
+                        showWhatsAppConfigDialog = false
+                        if (whatsAppConfigInput.isNotBlank()) {
+                            openWhatsAppSupport()
+                        }
+                    }
+                ) {
+                    Text(if (currentLanguage == AppLanguage.BENGALI) "সংরক্ষণ ও সংযোগ" else "Save & Connect")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWhatsAppConfigDialog = false }) {
                     Text(if (currentLanguage == AppLanguage.BENGALI) "বাতিল" else "Cancel")
                 }
             }

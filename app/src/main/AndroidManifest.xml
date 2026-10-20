@@ -24,6 +24,10 @@
     <!-- Haptic feedback during pattern and PIN entry -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Biometric Authentication (Fingerprint & Face) -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+
     <!-- Request battery optimization exclusion for OEM devices like HiOS/MIUI -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
